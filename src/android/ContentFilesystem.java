@@ -127,7 +127,9 @@ public class ContentFilesystem extends Filesystem {
         try {
         	if (cursor != null && cursor.moveToFirst()) {
         		size = resourceSizeForCursor(cursor);
-        		lastModified = lastModifiedDateForCursor(cursor);
+        		Long modified = lastModifiedDateForCursor(cursor);
+        		if (modified != null)
+        			lastModified = modified.longValue();        		
         	} else {
                 // Some content providers don't support cursors at all!
                 CordovaResourceApi.OpenForReadResult offr = resourceApi.openForRead(nativeUri);
@@ -185,8 +187,11 @@ public class ContentFilesystem extends Filesystem {
 	}
 	
 	protected Long lastModifiedDateForCursor(Cursor cursor) {
-        final String[] LOCAL_FILE_PROJECTION = { MediaStore.MediaColumns.DATE_MODIFIED };
-        int columnIndex = cursor.getColumnIndex(LOCAL_FILE_PROJECTION[0]);
+        int columnIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DATE_MODIFIED);
+        if (columnIndex == -1) {
+        	columnIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_LAST_MODIFIED);
+        }        
+        
         if (columnIndex != -1) {
             String dateStr = cursor.getString(columnIndex);
             if (dateStr != null) {
